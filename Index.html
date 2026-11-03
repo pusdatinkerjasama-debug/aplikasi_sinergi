@@ -1,0 +1,2043 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi SINERGI - PUSDATIN KKP RI</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            neon: {
+              bg: '#07162D',
+              secondary: '#102440',
+              sidebar: '#0B1D36',
+              panel: '#1A3554',
+              panelSec: '#132B49',
+              cyan: '#00E5FF',
+              blue: '#168BFF',
+              purple: '#A879FF',
+              teal: '#00F5D4',
+              success: '#19E6A2',
+              warning: '#FFD65A',
+              danger: '#FF4D91',
+              orange: '#FFBF4D',
+              crimson: '#FF4D8D',
+              textPrimary: '#FFFFFF',
+              textSecondary: '#B8C9E3',
+              textMuted: '#8EA7C8'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <!-- React & ReactDOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Babel Compiler -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif; 
+      background-color: #07162D; 
+      color: #FFFFFF;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #0B1D36; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 229, 255, 0.35); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(0, 229, 255, 0.6); }
+
+    /* Glassmorphism Panel Style */
+    .glass-panel {
+      background: linear-gradient(135deg, rgba(26, 53, 84, 0.92) 0%, rgba(16, 36, 64, 0.96) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      box-shadow: 0 8px 32px 0 rgba(0, 5, 18, 0.38);
+    }
+    .glass-panel-hover:hover {
+      border-color: rgba(0, 229, 255, 0.7);
+      box-shadow: 0 0 25px rgba(0, 229, 255, 0.22);
+    }
+
+    /* Print styling */
+    .print-header { display: none; }
+    @media print {
+      @page { size: A4 landscape; margin: 10mm; }
+      * { color: #000000 !important; text-shadow: none !important; }
+      body { background-color: #ffffff !important; color: #000000 !important; }
+      aside, header, .no-print { display: none !important; }
+      .print-header { display: block !important; margin-bottom: 15px; color: #000000 !important; }
+      .print-header h2, .print-header h3, .print-header p, .print-header td { color: #000000 !important; }
+      .glass-panel { background: #ffffff !important; border: 1px solid #666666 !important; color: #000000 !important; box-shadow: none !important; }
+      table { border-color: #666666 !important; }
+      th, td { color: #000000 !important; border-color: #888888 !important; }
+      span { color: #000000 !important; border-color: #888888 !important; background: transparent !important; }
+    }
+  </style>
+</head>
+<body class="bg-neon-bg text-neon-textPrimary min-h-screen selection:bg-neon-cyan selection:text-neon-bg">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyng8aZfXQchQsD6DCROd-Uz1cfGppDZDshYfn4WhcTUwP4-0EIZV6QsMMv7ScYmZ4b/exec"; 
+
+    const ESELON_2_MAPPING = {
+      "Sekretariat Jenderal": [
+        "Biro Perencanaan",
+        "Biro Keuangan dan Barang Milik Negara",
+        "Biro Sumber Daya Manusia Aparatur dan Organisasi",
+        "Biro Hukum",
+        "Biro Hubungan Masyarakat dan Kerja Sama Luar Negeri",
+        "Biro Umum",
+        "Biro Pengadaan Barang/Jasa",
+        "Pusat Data dan Informasi",
+        "Pusat Kebijakan Strategis"
+      ],
+      "Direktorat Jenderal Penataan Ruang Laut": [
+        "Sekretariat Direktorat Jenderal Penataan Ruang Laut",
+        "Direktorat Perencanaan Ruang Perairan",
+        "Direktorat Pemanfaatan Ruang Pesisir dan Pulau-Pulau Kecil",
+        "Direktorat Pemanfaatan Ruang Kolom Perairan dan Dasar Laut",
+        "Direktorat Pembinaan Penataan Ruang Laut",
+        "Direktorat Pengendalian Pemanfaatan Ruang Laut"
+      ],
+      "Direktorat Jenderal Pengelolaan Kelautan": [
+        "Sekretariat Direktorat Jenderal Pengelolaan Kelautan",
+        "Direktorat Konservasi Ekosistem",
+        "Direktorat Konservasi Spesies dan Genetik",
+        "Direktorat Pesisir dan Pulau-Pulau Kecil",
+        "Direktorat Jasa Bahari",
+        "Direktorat Sumber Daya Kelautan"
+      ],
+      "Direktorat Jenderal Perikanan Tangkap": [
+        "Sekretariat Direktorat Jenderal Perikanan Tangkap",
+        "Direktorat Pengelolaan Sumber Daya Ikan",
+        "Direktorat Kapal Perikanan dan Alat Penangkapan Ikan",
+        "Direktorat Kepelabuhan Perikanan",
+        "Direktorat Usaha Penangkapan Ikan",
+        "Direktorat Perlindungan dan Pemberdayaan Nelayan"
+      ],
+      "Direktorat Jenderal Perikanan Budi Daya": [
+        "Sekretariat Direktorat Jenderal Perikanan Budi Daya",
+        "Direktorat Ikan Air Tawar",
+        "Direktorat Ikan Air Payau",
+        "Direktorat Ikan Air Laut",
+        "Direktorat Rumput Laut",
+        "Direktorat Prasarana dan Sarana"
+      ],
+      "Direktorat Jenderal Penguatan Daya Saing Produk Kelautan dan Perikanan": [
+        "Sekretariat Direktorat Jenderal Penguatan Daya Saing Produk Kelautan dan Perikanan",
+        "Direktorat Prasarana dan Sarana",
+        "Direktorat Pemberdayaan Usaha",
+        "Direktorat Pengolahan",
+        "Direktorat Pemasaran",
+        "Direktorat Akses dan Promosi"
+      ],
+      "Direktorat Jenderal Pengawasan Sumber Daya Kelautan dan Perikanan": [
+        "Sekretariat Direktorat Jenderal Pengawasan Sumber Daya Kelautan dan Perikanan",
+        "Direktorat Prasarana dan Sarana Pengawasan",
+        "Direktorat Pengendalian Operasi Armada",
+        "Direktorat Pengawasan Sumber Daya Kelautan",
+        "Direktorat Pengawasan Sumber Daya Perikanan",
+        "Direktorat Penanganan Pelanggaran"
+      ],
+      "Inspektorat Jenderal": [
+        "Sekretariat Inspektorat Jenderal",
+        "Inspektorat I",
+        "Inspektorat II",
+        "Inspektorat III",
+        "Inspektorat IV",
+        "Inspektorat V"
+      ],
+      "Badan Penyuluhan dan Pengembangan Sumber Daya Manusia Kelautan dan Perikanan": [
+        "Sekretariat Badan Penyuluhan dan Pengembangan Sumber Daya Manusia Kelautan dan Perikanan",
+        "Pusat Penyuluhan Kelautan dan Perikanan",
+        "Pusat Pendidikan Kelautan dan Perikanan",
+        "Pusat Pelatihan Kelautan dan Perikanan",
+        "Pusat Standardisasi dan Sertifikasi Sumber Daya Manusia Kelautan dan Perikanan"
+      ],
+      "Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan": [
+        "Sekretariat Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan",
+        "Pusat Manajemen Mutu",
+        "Pusat Mutu Produksi Primer",
+        "Pusat Mutu Pascapanen"
+      ]
+    };
+
+    const EMPTY_FORM = {
+      nomorPks: "",
+      judul: "",
+      jenis: "Nasional",
+      unitKerjaEs1: "Sekretariat Jenderal",
+      unitKerjaEs2: "Biro Perencanaan",
+      mitraId: "",
+      namaMitra: "",
+      picMitra: "",
+      kontakMitra: "",
+      tanggalMulai: "",
+      tanggalSelesai: "",
+      ruangLingkup: "",
+      capaianKegiatan: "",
+      capaianOutput: "",
+      kelengkapanDokumen: "",
+      dokumenFile: null,
+      dokumenUrl: "",
+      dokumenBase64: "",
+      dokumenName: "",
+      dokumenMimeType: "",
+      dokumenUploaded: ""
+    };
+
+    const INITIAL_PKS_DATA = [
+      {
+        id: "PKS-2024-001",
+        nomorPks: "012/PKS/PUSDATIN/KKP/I/2024",
+        judul: "Kerja Sama Integrasi Satelit Radar Citra Laut & Monitoring Kapal",
+        jenis: "Nasional",
+        unitKerjaEs1: "Sekretariat Jenderal",
+        unitKerjaEs2: "Pusat Data dan Informasi",
+        mitraId: "MTR-001",
+        namaMitra: "PT. Global Nusantara Geo",
+        picMitra: "Ir. Hendra Wijaya",
+        kontakMitra: "081122334455",
+        tanggalMulai: "2024-09-02",
+        tanggalSelesai: "2027-09-02",
+        ruangLingkup: "1. Pengamanan Laut Indonesia\n2. Pertukaran Data dan Informasi\n3. Sosialisasi dan Pelatihan",
+        capaianKegiatan: 85,
+        capaianOutput: 90,
+        kelengkapanDokumen: 100,
+        statusCapaian: "Hijau",
+        skorAkhir: 90.0,
+        dokumenUploaded: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
+      }
+    ];
+
+    function formatDateFormatted(rawString) {
+      if (!rawString) return "-";
+      let str = String(rawString).trim();
+      if (str.includes("T") || str.includes("-")) {
+        let cleanPart = str.split("T")[0];
+        let parts = cleanPart.split("-");
+        if (parts.length === 3 && parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        }
+      }
+      return str;
+    }
+
+    function parseDateToInput(rawString) {
+      if (!rawString) return "";
+      let str = String(rawString).trim();
+      if (str.includes("T") || str.includes("-")) {
+        return str.split("T")[0];
+      }
+      return str;
+    }
+
+    function formatRuangLingkup(text, isHtml = false) {
+      if (!text) return "-";
+      let cleanText = String(text).trim();
+      let formatted = cleanText.replace(/(\d+\.\s+)/g, (match, p1, offset) => {
+        return offset === 0 ? p1 : (isHtml ? "<br/>" + p1 : "\n" + p1);
+      });
+      return formatted;
+    }
+
+    function App() {
+      const [isLoggedIn, setIsLoggedIn] = useState(false);
+      const [loginUser, setLoginUser] = useState("");
+      const [loginPass, setLoginPass] = useState("");
+      const [isLoadingLogin, setIsLoadingLogin] = useState(false);
+
+      const [pksList, setPksList] = useState(() => {
+        const saved = localStorage.getItem('PERKASA_PKS_DATA');
+        return saved ? JSON.parse(saved) : INITIAL_PKS_DATA;
+      });
+
+      const [userList, setUserList] = useState([]);
+      const [userFormData, setUserFormData] = useState({ username: "", password: "", role: "Operator" });
+      const [editingUser, setEditingUser] = useState(null);
+
+      const [role, setRole] = useState("Administrator");
+      const [activeTab, setActiveTab] = useState("dashboard");
+      const [searchQuery, setSearchQuery] = useState("");
+      
+      const [tahunFilter, setTahunFilter] = useState("ALL");
+      const [mitraFilter, setMitraFilter] = useState("ALL");
+      const [masaBerlakuFilter, setMasaBerlakuFilter] = useState("ALL");
+      const [unitFilter, setUnitFilter] = useState("ALL");
+      const [unitEs2Filter, setUnitEs2Filter] = useState("ALL");
+      const [statusFilter, setStatusFilter] = useState("ALL");
+      const [expiryFilter, setExpiryFilter] = useState("ALL");
+
+      // State Sorting Kolom (Aman & Interaktif)
+      const [mitraSortOrder, setMitraSortOrder] = useState(null); 
+      const [judulSortOrder, setJudulSortOrder] = useState(null); 
+
+      const [currentPage, setCurrentPage] = useState(1);
+      const pageSize = 10;
+
+      const [toastMessage, setToastMessage] = useState(null);
+      const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+      const [editingId, setEditingId] = useState(null);
+
+      const [formData, setFormData] = useState(EMPTY_FORM);
+
+      const activeEselon2List = useMemo(() => {
+        const key = formData.unitKerjaEs1 || "Sekretariat Jenderal";
+        return ESELON_2_MAPPING[key] || [];
+      }, [formData.unitKerjaEs1]);
+
+      const dashboardEselon2List = useMemo(() => {
+        if (unitFilter === "ALL") return [];
+        return ESELON_2_MAPPING[unitFilter] || [];
+      }, [unitFilter]);
+
+      const handleLogout = () => {
+        setIsLoggedIn(false);
+        window.location.reload();
+      };
+
+      useEffect(() => {
+        setCurrentPage(1);
+      }, [searchQuery, tahunFilter, mitraFilter, masaBerlakuFilter, unitFilter, unitEs2Filter, statusFilter, expiryFilter, mitraSortOrder, judulSortOrder]);
+
+      const resetFilters = () => {
+        setTahunFilter("ALL");
+        setMitraFilter("ALL");
+        setMasaBerlakuFilter("ALL");
+        setUnitFilter("ALL");
+        setUnitEs2Filter("ALL");
+        setStatusFilter("ALL");
+        setExpiryFilter("ALL");
+        setMitraSortOrder(null);
+        setJudulSortOrder(null);
+        setSearchQuery("");
+        setShowNotifDropdown(false);
+      };
+
+      const handleMenuClick = (tabName) => {
+        resetFilters();
+        if (tabName === 'tambah-pks') {
+          setEditingId(null);
+          setFormData(EMPTY_FORM);
+        }
+        setActiveTab(tabName);
+      };
+
+      const handleOpenTambahForm = () => {
+        resetFilters();
+        setEditingId(null);
+        setFormData(EMPTY_FORM);
+        setActiveTab("tambah-pks");
+      };
+
+      useEffect(() => {
+        if (role === "Operator") {
+          setActiveTab("data-pks");
+        } else if (role === "Pimpinan") {
+          setActiveTab("dashboard");
+        }
+      }, [role]);
+
+      const fetchPksData = () => {
+        if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("AKfycbx...")) {
+          fetch(APPS_SCRIPT_URL)
+            .then(res => res.json())
+            .then(data => {
+              if (Array.isArray(data) && data.length > 0) {
+                setPksList(data);
+                localStorage.setItem('PERKASA_PKS_DATA', JSON.stringify(data));
+              }
+            })
+            .catch(err => console.log("Gagal memuat data dari Spreadsheet. Menggunakan cache lokal."));
+        }
+      };
+
+      useEffect(() => {
+        fetchPksData();
+      }, []);
+
+      const listTahun = useMemo(() => {
+        const setTahun = new Set();
+        pksList.forEach(item => {
+          if (item.tanggalMulai) setTahun.add(String(item.tanggalMulai).substring(0, 4));
+        });
+        const arr = Array.from(setTahun).sort().reverse();
+        return arr;
+      }, [pksList]);
+
+      const fetchUsers = () => {
+        if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("AKfycbx...")) {
+          fetch(`${APPS_SCRIPT_URL}?action=getUsers`)
+            .then(res => res.json())
+            .then(data => {
+              if (Array.isArray(data)) setUserList(data);
+            })
+            .catch(err => console.log("Gagal memuat data User."));
+        }
+      };
+
+      useEffect(() => {
+        if (isLoggedIn && role === "Administrator") {
+          fetchUsers();
+        }
+      }, [isLoggedIn, role]);
+
+      useEffect(() => {
+        try {
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        } catch(e) {}
+      });
+
+      const showToast = (msg) => {
+        setToastMessage(msg);
+        setTimeout(() => setToastMessage(null), 3500);
+      };
+
+      const handleLogin = (e) => {
+        e.preventDefault();
+        if (!loginUser.trim() || !loginPass.trim()) {
+          alert("Masukkan username dan password dengan benar.");
+          return;
+        }
+
+        setIsLoadingLogin(true);
+
+        if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("AKfycbx...")) {
+          const callbackName = 'jsonp_login_cb_' + Math.round(Math.random() * 100000);
+          
+          window[callbackName] = function(data) {
+            delete window[callbackName];
+            if (scriptTag && scriptTag.parentNode) {
+              scriptTag.parentNode.removeChild(scriptTag);
+            }
+            setIsLoadingLogin(false);
+
+            if (data && data.success) {
+              setIsLoggedIn(true);
+              const userRole = data.role || "Administrator";
+              setRole(userRole);
+              showToast(`Login Berhasil sebagai ${userRole}!`);
+            } else {
+              alert(data.message || "Username atau Password salah.");
+            }
+          };
+
+          const scriptTag = document.createElement('script');
+          scriptTag.src = `${APPS_SCRIPT_URL}?action=login&username=${encodeURIComponent(loginUser)}&password=${encodeURIComponent(loginPass)}&callback=${callbackName}`;
+          
+          scriptTag.onerror = function() {
+            delete window[callbackName];
+            if (scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
+            setIsLoadingLogin(false);
+            
+            if (loginUser === "admin" && loginPass === "admin") {
+              setIsLoggedIn(true);
+              setRole("Administrator");
+              showToast("Login Berhasil (Mode Fallback/Offline).");
+            } else {
+              alert("Gagal terhubung ke database. Periksa koneksi Anda.");
+            }
+          };
+
+          document.body.appendChild(scriptTag);
+        } else {
+          setIsLoadingLogin(false);
+          setIsLoggedIn(true);
+          showToast("Login Berhasil (Simulasi Lokal).");
+        }
+      };
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onloadend = function () {
+            const base64String = reader.result.split(',')[1];
+            setFormData(prev => ({
+              ...prev,
+              dokumenName: file.name,
+              dokumenBase64: base64String,
+              dokumenMimeType: file.type,
+              dokumenFile: file.name
+            }));
+            showToast(`File ${file.name} siap di-upload ke server.`);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+
+      const exportToPDF = () => {
+        window.print();
+      };
+
+      const exportToDoc = () => {
+        const selectedUnit = unitFilter === "ALL" ? "Semua Unit Kerja" : unitFilter;
+        const selectedTahun = tahunFilter === "ALL" ? "Semua" : tahunFilter;
+        const selectedMasaBerlaku = masaBerlakuFilter === "ALL" ? "Semua" : masaBerlakuFilter;
+        const selectedMitra = mitraFilter === "ALL" ? "Semua" : mitraFilter;
+        const selectedStatus = statusFilter === "ALL" ? "Semua" : statusFilter;
+
+        let htmlContent = `
+          <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+          <head>
+            <meta charset='utf-8'>
+            <title>Laporan PKS PUSDATIN KKP</title>
+            <style>
+              @page Section1 {
+                size: 842.0pt 595.0pt;
+                mso-page-orientation: landscape;
+                margin: 0.5in 0.5in 0.5in 0.5in;
+                mso-header-margin: 35.4pt;
+                mso-footer-margin: 35.4pt;
+              }
+              div.Section1 { page: Section1; }
+              body { font-family: 'Arial', sans-serif; font-size: 9.5pt; color: #111111; }
+              .doc-header { text-align: center; margin-bottom: 20px; }
+              .doc-header h2 { color: #0B2A6F; margin: 0 0 4px 0; font-size: 13pt; font-weight: bold; text-transform: uppercase; }
+              .doc-header h3 { color: #0B2A6F; margin: 0 0 6px 0; font-size: 11.5pt; font-weight: bold; text-transform: uppercase; }
+              .doc-header p { margin: 0; font-size: 10pt; color: #222; font-weight: bold; }
+              .filter-info { width: 100%; margin-top: 15px; margin-bottom: 12px; font-size: 9.5pt; font-weight: bold; }
+              .filter-info td { padding: 3px 0; }
+              table.data-table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: fixed; }
+              table.data-table th, table.data-table td { border: 1px solid #777777; padding: 6px 8px; word-wrap: break-word; vertical-align: top; }
+              table.data-table th { background-color: #0B2A6F; color: #ffffff; font-weight: bold; text-align: center; font-size: 9pt; }
+              table.data-table td { font-size: 8.5pt; color: #111111; }
+              .periode-col { text-align: center; line-height: 1.3; }
+            </style>
+          </head>
+          <body>
+            <div class="Section1">
+              <div class="doc-header">
+                <h2>REKAPITULASI KERJA SAMA</h2>
+                <h3>KEMENTERIAN KELAUTAN DAN PERIKANAN</h3>
+                <p>${selectedUnit}</p>
+              </div>
+              <table class="filter-info" style="border: none;">
+                <tr style="border: none;">
+                  <td style="border: none; width: 50%; text-align: left;">Tahun : ${selectedTahun}</td>
+                  <td style="border: none; width: 50%; text-align: right;">Masa Berlaku : ${selectedMasaBerlaku}</td>
+                </tr>
+                <tr style="border: none;">
+                  <td style="border: none; width: 50%; text-align: left;">Mitra : ${selectedMitra}</td>
+                  <td style="border: none; width: 50%; text-align: right;">Status : ${selectedStatus}</td>
+                </tr>
+              </table>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width: 12%;">Nomor PKS</th>
+                    <th style="width: 20%;">Judul PKS</th>
+                    <th style="width: 12%;">Eselon 1</th>
+                    <th style="width: 12%;">Eselon 2</th>
+                    <th style="width: 11%;">Nama Mitra</th>
+                    <th style="width: 9%;">Periode</th>
+                    <th style="width: 24%;">Ruang Lingkup</th>
+                  </tr>
+                </thead>
+                <tbody>
+        `;
+
+        filteredPks.forEach(item => {
+          const formattedRuangLingkup = formatRuangLingkup(item.ruangLingkup, true);
+          const tglMulai = formatDateFormatted(item.tanggalMulai);
+          const tglSelesai = formatDateFormatted(item.tanggalSelesai);
+          
+          htmlContent += `
+            <tr>
+              <td>${item.nomorPks || '-'}</td>
+              <td><b>${item.judul || '-'}</b></td>
+              <td>${item.unitKerjaEs1 || item.unitKerja || '-'}</td>
+              <td>${item.unitKerjaEs2 || '-'}</td>
+              <td>${item.namaMitra || '-'}</td>
+              <td class="periode-col">${tglMulai}<br/>s/d<br/>${tglSelesai}</td>
+              <td>${formattedRuangLingkup}</td>
+            </tr>
+          `;
+        });
+
+        htmlContent += `
+                </tbody>
+              </table>
+            </div>
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob(['\ufeff' + htmlContent], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Data_PKS_Aplikasi_SINERGI_${new Date().toISOString().split('T')[0]}.doc`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Dokumen DOC berhasil diunduh.");
+      };
+
+      const handleSaveUser = async (e) => {
+        e.preventDefault();
+        if (!userFormData.username || !userFormData.password) {
+          alert("Isi Username dan Password.");
+          return;
+        }
+
+        let actionType = editingUser ? "updateUser" : "saveUser";
+        let payload = { ...userFormData };
+        if (editingUser) payload.oldUsername = editingUser.username;
+
+        try {
+          showToast("Menyimpan user ke database Sheet...");
+          const res = await fetch(APPS_SCRIPT_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: actionType, payload })
+          });
+          const result = await res.json();
+          if (result.success) {
+            showToast("Data User berhasil disimpan!");
+            fetchUsers();
+            setUserFormData({ username: "", password: "", role: "Operator" });
+            setEditingUser(null);
+          } else {
+            alert("Gagal menyimpan user.");
+          }
+        } catch (err) {
+          showToast("Gagal menyimpan user ke server.");
+        }
+      };
+
+      const handleEditUser = (u) => {
+        setEditingUser(u);
+        setUserFormData({ username: u.username, password: u.password, role: u.role || "Operator" });
+      };
+
+      const handleDeleteUser = async (uname) => {
+        if (confirm(`Yakin ingin menghapus user '${uname}'?`)) {
+          try {
+            await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({ action: "deleteUser", username: uname })
+            });
+            showToast("User berhasil dihapus.");
+            fetchUsers();
+          } catch(e) {
+            showToast("Gagal menghapus user.");
+          }
+        }
+      };
+
+      const expiringSoonList = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        let soon = [];
+        pksList.forEach(item => {
+          if (!item.tanggalSelesai) return;
+          const cleanDateStr = parseDateToInput(item.tanggalSelesai);
+          const endDate = new Date(cleanDateStr);
+          if (isNaN(endDate.getTime())) return;
+          const diffTime = endDate - today;
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays >= 0 && diffDays <= 90) {
+            soon.push(item);
+          }
+        });
+        return soon;
+      }, [pksList]);
+
+      const listMitra = useMemo(() => {
+        const setMitra = new Set();
+        pksList.forEach(item => { if (item.namaMitra) setMitra.add(item.namaMitra); });
+        return Array.from(setMitra);
+      }, [pksList]);
+
+      const filteredPks = useMemo(() => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let list = pksList.filter(item => {
+          const matchSearch = (item.judul || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (item.nomorPks || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                              (item.namaMitra || '').toLowerCase().includes(searchQuery.toLowerCase());
+          
+          const matchStatus = statusFilter === "ALL" || item.statusCapaian === statusFilter;
+          
+          const itemEs1 = String(item.unitKerjaEs1 || item.unitKerja || '').trim().toLowerCase();
+          const filterEs1 = String(unitFilter).trim().toLowerCase();
+          const matchUnit = unitFilter === "ALL" || itemEs1 === filterEs1;
+
+          const itemEs2 = String(item.unitKerjaEs2 || '').trim().toLowerCase();
+          const filterEs2 = String(unitEs2Filter).trim().toLowerCase();
+          const matchUnitEs2 = unitEs2Filter === "ALL" || itemEs2 === filterEs2;
+
+          const matchMitra = mitraFilter === "ALL" || item.namaMitra === mitraFilter;
+
+          let matchTahun = true;
+          if (tahunFilter !== "ALL") {
+            const tahunMulai = item.tanggalMulai ? String(item.tanggalMulai).substring(0, 4) : "";
+            matchTahun = (tahunMulai === tahunFilter);
+          }
+
+          let matchMasaBerlaku = true;
+          if (masaBerlakuFilter !== "ALL" && item.tanggalMulai && item.tanggalSelesai) {
+            const start = new Date(parseDateToInput(item.tanggalMulai));
+            const end = new Date(parseDateToInput(item.tanggalSelesai));
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const calculatedYears = Math.round(diffDays / 365);
+            const targetYears = parseInt(masaBerlakuFilter.split(" ")[0]);
+            matchMasaBerlaku = (calculatedYears === targetYears);
+          }
+
+          let matchExpiry = true;
+          if (expiryFilter !== "ALL" && item.tanggalSelesai) {
+            const cleanDateStr = parseDateToInput(item.tanggalSelesai);
+            const endDate = new Date(cleanDateStr);
+            if (!isNaN(endDate.getTime())) {
+              const diffDays = Math.ceil((endDate - today) / (1000 * 60 * 60 * 24));
+              if (expiryFilter === "AKAN_BERAKHIR") matchExpiry = (diffDays >= 0 && diffDays <= 90);
+              else if (expiryFilter === "SUDAH_BERAKHIR") matchExpiry = (diffDays < 0);
+            }
+          }
+
+          return matchSearch && matchStatus && matchUnit && matchUnitEs2 && matchMitra && matchTahun && matchMasaBerlaku && matchExpiry;
+        });
+
+        return [...list].sort((a, b) => {
+          if (mitraSortOrder === "asc") {
+            return String(a.namaMitra || '').localeCompare(String(b.namaMitra || ''), 'id', { sensitivity: 'base' });
+          } else if (mitraSortOrder === "desc") {
+            return String(b.namaMitra || '').localeCompare(String(a.namaMitra || ''), 'id', { sensitivity: 'base' });
+          }
+          
+          if (judulSortOrder === "asc") {
+            return String(a.judul || '').localeCompare(String(b.judul || ''), 'id', { sensitivity: 'base' });
+          } else if (judulSortOrder === "desc") {
+            return String(b.judul || '').localeCompare(String(a.judul || ''), 'id', { sensitivity: 'base' });
+          }
+
+          const tglA = a.tanggalMulai ? new Date(parseDateToInput(a.tanggalMulai)).getTime() : 0;
+          const tglB = b.tanggalMulai ? new Date(parseDateToInput(b.tanggalMulai)).getTime() : 0;
+          return tglB - tglA;
+        });
+      }, [pksList, searchQuery, statusFilter, unitFilter, unitEs2Filter, mitraFilter, tahunFilter, masaBerlakuFilter, expiryFilter, mitraSortOrder, judulSortOrder]);
+
+      const paginatedPks = useMemo(() => {
+        const startIndex = (currentPage - 1) * pageSize;
+        return filteredPks.slice(startIndex, startIndex + pageSize);
+      }, [filteredPks, currentPage, pageSize]);
+
+      const totalPages = Math.ceil(filteredPks.length / pageSize) || 1;
+
+      const stats = useMemo(() => {
+        const total = filteredPks.length;
+        const hijau = filteredPks.filter(p => p.statusCapaian === "Hijau").length;
+        const kuning = filteredPks.filter(p => p.statusCapaian === "Kuning").length;
+        const merah = filteredPks.filter(p => p.statusCapaian === "Merah").length;
+
+        return { total, hijau, kuning, merah };
+      }, [filteredPks]);
+
+      const handleSavePks = async (e) => {
+        e.preventDefault();
+        const keg = parseFloat(formData.capaianKegiatan) || 0;
+        const out = parseFloat(formData.capaianOutput) || 0;
+        const dok = parseFloat(formData.kelengkapanDokumen) || 0;
+        const skorAkhir = (keg * 0.4) + (out * 0.4) + (dok * 0.2);
+        
+        let statusCapaian = "Merah";
+        if (skorAkhir >= 80) statusCapaian = "Hijau";
+        else if (skorAkhir >= 60) statusCapaian = "Kuning";
+
+        let actionType = editingId ? "updatePKS" : "savePKS";
+        
+        let targetPayload = {
+          id: editingId || `PKS-${Date.now()}`,
+          nomorPks: formData.nomorPks || "",
+          judul: formData.judul || "",
+          jenis: formData.jenis || "Nasional",
+          unitKerjaEs1: formData.unitKerjaEs1 || "",
+          unitKerjaEs2: formData.unitKerjaEs2 || "",
+          mitraId: formData.mitraId || "",
+          namaMitra: formData.namaMitra || "",
+          picMitra: formData.picMitra || "",
+          kontakMitra: formData.kontakMitra || "",
+          tanggalMulai: formData.tanggalMulai || "",
+          tanggalSelesai: formData.tanggalSelesai || "",
+          ruangLingkup: formData.ruangLingkup || "",
+          capaianKegiatan: keg,
+          capaianOutput: out,
+          kelengkapanDokumen: dok,
+          statusCapaian: statusCapaian,
+          skorAkhir: parseFloat(skorAkhir.toFixed(2)),
+          dokumenUploaded: formData.dokumenUploaded || formData.dokumenUrl || "",
+          dokumenBase64: formData.dokumenBase64 || "",
+          dokumenName: formData.dokumenName || "",
+          dokumenMimeType: formData.dokumenMimeType || ""
+        };
+
+        if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("AKfycbx...")) {
+          showToast("Menyimpan data...");
+          try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+              method: "POST",
+              headers: { "Content-Type": "text/plain;charset=utf-8" },
+              body: JSON.stringify({
+                action: actionType,
+                payload: targetPayload,
+                user: role
+              })
+            });
+            const result = await response.json();
+            if (result.success) {
+              if (result.dokumenUrl) {
+                targetPayload.dokumenUploaded = result.dokumenUrl;
+                targetPayload.dokumenUrl = result.dokumenUrl;
+              }
+              showToast("Dokumen & Data PKS Berhasil Disimpan!");
+              fetchPksData();
+            } else {
+              alert("Gagal menyimpan ke server: " + (result.error || "Unknown error"));
+            }
+          } catch (error) {
+            console.error(error);
+            showToast("Gagal terhubung ke server. Periksa koneksi Anda.");
+            return;
+          }
+        } else {
+          showToast("Data PKS Berhasil Disimpan (Mode Lokal)!");
+        }
+
+        if (editingId) {
+          setPksList(pksList.map(item => item.id === editingId ? targetPayload : item));
+        } else {
+          setPksList([targetPayload, ...pksList]);
+        }
+
+        setEditingId(null);
+        setFormData(EMPTY_FORM);
+        setActiveTab("data-pks");
+      };
+
+      const handleEditClick = (item) => {
+        setEditingId(item.id);
+        const cleanMulai = parseDateToInput(item.tanggalMulai);
+        const cleanSelesai = parseDateToInput(item.tanggalSelesai);
+        const docLink = item.dokumenUploaded || item.dokumenUrl || "";
+        const existingFileName = item.dokumenName || (docLink ? decodeURIComponent(docLink.split('/').pop().split('?')[0]) : null);
+
+        const initialEs1 = item.unitKerjaEs1 || item.unitKerja || "Sekretariat Jenderal";
+        const availableEs2List = ESELON_2_MAPPING[initialEs1] || [];
+        const initialEs2 = item.unitKerjaEs2 || (availableEs2List.length > 0 ? availableEs2List[0] : "");
+
+        setFormData({
+          nomorPks: item.nomorPks || "",
+          judul: item.judul || "",
+          jenis: item.jenis || "Nasional",
+          unitKerjaEs1: initialEs1,
+          unitKerjaEs2: initialEs2,
+          mitraId: item.mitraId || item.mitraid || "",
+          namaMitra: item.namaMitra || item.namamitra || "",
+          picMitra: item.picMitra || item.picmitra || "",
+          kontakMitra: item.kontakMitra || item.kontakmitra || "",
+          tanggalMulai: cleanMulai,
+          tanggalSelesai: cleanSelesai,
+          ruangLingkup: item.ruangLingkup || "",
+          capaianKegiatan: item.capaianKegiatan !== undefined && item.capaianKegiatan !== null ? item.capaianKegiatan : "",
+          capaianOutput: item.capaianOutput !== undefined && item.capaianOutput !== null ? item.capaianOutput : "",
+          kelengkapanDokumen: item.kelengkapanDokumen !== undefined && item.kelengkapanDokumen !== null ? item.kelengkapanDokumen : "",
+          dokumenFile: existingFileName,
+          dokumenUrl: docLink,
+          dokumenUploaded: docLink,
+          dokumenBase64: "",
+          dokumenName: existingFileName || "",
+          dokumenMimeType: ""
+        });
+        setActiveTab("tambah-pks");
+      };
+
+      const handleDeletePks = async (id) => {
+        if (role === "Pimpinan") {
+          alert("Pimpinan tidak memiliki akses untuk menghapus data!");
+          return;
+        }
+        if (confirm("Apakah Anda yakin ingin menghapus data PKS ini dari aplikasi dan Spreadsheet?")) {
+          const updated = pksList.filter(item => item.id !== id);
+          setPksList(updated);
+          localStorage.setItem('PERKASA_PKS_DATA', JSON.stringify(updated));
+
+          if (APPS_SCRIPT_URL && !APPS_SCRIPT_URL.includes("AKfycbx...")) {
+            try {
+              showToast("Menghapus data dari server/Database...");
+              const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({
+                  action: "deletePKS",
+                  id: id,
+                  payload: { id: id },
+                  user: role
+                })
+              });
+              const result = await response.json();
+              if (result && (result.success !== false)) {
+                showToast("Data PKS berhasil dihapus dari aplikasi & database.");
+                fetchPksData();
+              } else {
+                showToast("Gagal menghapus dari database server.");
+                fetchPksData();
+              }
+            } catch(e) {
+              showToast("Gagal terhubung ke database untuk menghapus data.");
+              fetchPksData();
+            }
+          } else {
+            showToast("Data PKS berhasil dihapus (Lokal).");
+          }
+        }
+      };
+
+      if (!isLoggedIn) {
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0B1D36] via-[#102440] to-[#1E466C] p-6">
+            <div className="glass-panel p-8 rounded-3xl shadow-2xl border border-neon-cyan/40 max-w-md w-full space-y-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-neon-cyan via-neon-blue to-neon-teal"></div>
+              <div className="flex flex-col items-center text-center space-y-3">
+                <div className="w-20 h-20 bg-white p-2.5 rounded-2xl shadow-xl flex items-center justify-center border border-neon-cyan/50 shadow-[0_0_15px_rgba(0,229,255,0.22)]">
+                  <img src="Logo KKP.png" alt="Logo KKP RI" className="max-w-full max-h-full object-contain" onError={(e)=>{e.target.onerror=null; e.target.src='https://upload.wikimedia.org/wikipedia/commons/9/91/Lambang_Kementerian_Kelautan_dan_Perikanan_Republik_Indonesia.png';}} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-extrabold text-neon-textPrimary">Sistem Informasi Kerja Sama Terintegrasi SINERGI</h2>
+                  <p className="text-xs font-bold text-neon-cyan mt-0.5">Enterprise Dashboard</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-neon-textSecondary block mb-1">Username / NIP</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="Username database" 
+                    value={loginUser} 
+                    onChange={(e) => setLoginUser(e.target.value)} 
+                    className="w-full border border-neon-cyan/40 bg-neon-secondary/80 rounded-2xl p-3 text-xs text-neon-textPrimary font-semibold focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan focus:outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-neon-textSecondary block mb-1">Password</label>
+                  <input 
+                    type="password" 
+                    required 
+                    placeholder="••••••••" 
+                    value={loginPass} 
+                    onChange={(e) => setLoginPass(e.target.value)} 
+                    className="w-full border border-neon-cyan/40 bg-neon-secondary/80 rounded-2xl p-3 text-xs text-neon-textPrimary font-semibold focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan focus:outline-none transition-all" 
+                  />
+                </div>
+                <button type="submit" disabled={isLoadingLogin} className="w-full bg-gradient-to-r from-neon-cyan to-neon-teal text-[#031323] py-3.5 rounded-2xl text-xs font-extrabold shadow-[0_0_20px_rgba(0,229,255,0.4)] hover:shadow-[0_0_25px_rgba(0,229,255,0.65)] transition-all cursor-pointer">
+                  {isLoadingLogin ? "Verifikasi 'User'..." : "Masuk ke Sistem"}
+                </button>
+              </form>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="min-h-screen flex flex-col bg-neon-bg text-neon-textPrimary relative selection:bg-neon-cyan selection:text-neon-bg">
+          
+          {toastMessage && (
+            <div className="fixed bottom-5 right-5 z-50 glass-panel bg-neon-panelSec text-neon-textPrimary px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border border-neon-cyan/60 shadow-[0_0_20px_rgba(0,229,255,0.3)] no-print">
+              <i data-lucide="check-circle" className="text-neon-teal w-5 h-5"></i>
+              <span className="text-xs font-semibold">{toastMessage}</span>
+            </div>
+          )}
+
+          <div className="print-header">
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '13pt', fontWeight: 'bold', color: '#000000', textTransform: 'uppercase', margin: '0 0 4px 0' }}>
+                REKAPITULASI KERJA SAMA
+              </h2>
+              <h3 style={{ fontSize: '12pt', fontWeight: 'bold', color: '#000000', textTransform: 'uppercase', margin: '0 0 6px 0' }}>
+                KEMENTERIAN KELAUTAN DAN PERIKANAN
+              </h3>
+              <p style={{ fontSize: '11pt', fontWeight: 'bold', color: '#000000', margin: 0 }}>
+                {unitFilter === "ALL" ? "Semua Unit Kerja" : unitFilter} {unitEs2Filter !== "ALL" ? ` - ${unitEs2Filter}` : ""}
+              </p>
+            </div>
+          </div>
+
+          <header className="bg-neon-secondary/95 backdrop-blur-md text-neon-textPrimary sticky top-0 z-40 border-b border-neon-cyan/30 no-print shadow-[0_4px_25px_rgba(0,0,0,0.4)]">
+            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-neon-cyan to-transparent"></div>
+            <div className="px-6 py-3.5 flex items-center justify-between">
+              
+              <div className="flex items-center space-x-3">
+                <div className="bg-white p-1.5 rounded-xl flex items-center justify-center border border-neon-cyan/50 w-11 h-11 overflow-hidden shadow-[0_0_12px_rgba(0,229,255,0.22)]">
+                  <img src="Logo KKP.png" alt="Logo KKP RI" className="max-w-full max-h-full object-contain" onError={(e)=>{e.target.onerror=null; e.target.src='https://upload.wikimedia.org/wikipedia/commons/9/91/Lambang_Kementerian_Kelautan_dan_Perikanan_Republik_Indonesia.png';}} />
+                </div>
+                <div>
+                  <h1 className="font-extrabold text-base tracking-wide flex items-center gap-2">
+                    Sistem Informasi Kerja Sama Terintegrasi
+                    <span className="text-[9px] font-bold bg-neon-cyan/20 text-neon-cyan px-2.5 py-0.5 rounded-full border border-neon-cyan/50 backdrop-blur-md shadow-[0_0_8px_rgba(0,229,255,0.22)]">KKP RI</span>
+                  </h1>
+                  <p className="text-[10px] font-semibold text-neon-textSecondary tracking-wide">SINERGI PUSDATIN</p>
+                </div>
+              </div>
+
+              <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
+                <i data-lucide="search" className="w-4 h-4 absolute left-3.5 top-3 text-neon-cyan"></i>
+                <input
+                  type="text"
+                  placeholder="Cari Nomor PKS, Nama Mitra, atau Judul..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#07172F]/75 border border-neon-cyan/40 rounded-2xl pl-10 pr-4 py-2 text-xs text-neon-textPrimary placeholder-neon-textMuted focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan backdrop-blur-md shadow-inner transition-all"
+                />
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <button 
+                    onClick={() => setShowNotifDropdown(!showNotifDropdown)}
+                    className="relative p-2.5 bg-neon-panel rounded-2xl hover:bg-neon-panelSec border border-neon-cyan/40 flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-sm hover:border-neon-cyan"
+                    title="Notifikasi Status PKS"
+                  >
+                    <i data-lucide="bell" className="w-4 h-4 text-neon-cyan"></i>
+                    {expiringSoonList.length > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-neon-danger text-white rounded-full text-[10px] font-bold flex items-center justify-center shadow-[0_0_10px_#FF4D91] animate-pulse">
+                        {expiringSoonList.length}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifDropdown && (
+                    <div className="absolute right-0 mt-3 w-80 glass-panel bg-neon-panel/95 text-neon-textPrimary rounded-3xl shadow-2xl border border-neon-cyan/50 z-50 p-5 space-y-3">
+                      <div className="flex items-center justify-between border-b border-neon-cyan/30 pb-2">
+                        <span className="font-bold text-xs text-neon-textPrimary">Notifikasi PKS (≤ 90 Hari)</span>
+                        <span className="bg-neon-warning/20 text-neon-warning text-[10px] px-2.5 py-0.5 rounded-full font-bold border border-neon-warning/40">
+                          {expiringSoonList.length} Total
+                        </span>
+                      </div>
+                      <div className="max-h-64 overflow-y-auto space-y-2 custom-scrollbar">
+                        {expiringSoonList.length === 0 ? (
+                          <p className="text-xs text-neon-textMuted text-center py-4">Tidak ada notifikasi PKS saat ini.</p>
+                        ) : (
+                          expiringSoonList.map(item => (
+                            <div 
+                              key={item.id} 
+                              onClick={() => { 
+                                setExpiryFilter("AKAN_BERAKHIR"); 
+                                setStatusFilter("ALL"); 
+                                setUnitFilter(item.unitKerjaEs1 || item.unitKerja || "ALL");
+                                setUnitEs2Filter(item.unitKerjaEs2 || "ALL");
+                                setShowNotifDropdown(false); 
+                                if (activeTab === "data-pks") {
+                                  setActiveTab("data-pks");
+                                } else {
+                                  setActiveTab("dashboard");
+                                }
+                              }}
+                              className="p-3 bg-neon-secondary/85 border border-neon-warning/50 rounded-2xl text-xs space-y-1 cursor-pointer hover:bg-neon-panelSec transition-all"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] bg-neon-warning/20 text-neon-warning font-bold px-2 py-0.5 rounded-md">Akan Berakhir (≤ 90 Hari)</span>
+                                <span className="text-[10px] text-neon-warning font-bold">Exp: {formatDateFormatted(item.tanggalSelesai)}</span>
+                              </div>
+                              <p className="font-bold text-neon-textPrimary truncate">{item.judul}</p>
+                              <p className="text-[10px] text-neon-textSecondary truncate">No: {item.nomorPks}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center bg-neon-panel rounded-2xl p-1.5 border border-neon-cyan/40 backdrop-blur-md">
+                  <span className="text-[10px] text-neon-cyan px-2 font-semibold">Role:</span>
+                  <select 
+                    value={role} 
+                    disabled={role !== "Administrator"}
+                    onChange={(e) => setRole(e.target.value)}
+                    className={`bg-transparent text-xs text-neon-textPrimary font-bold focus:outline-none pr-1 ${role !== 'Administrator' ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+                  >
+                    <option value="Administrator" className="bg-neon-bg text-neon-textPrimary">Administrator</option>
+                    <option value="Operator" className="bg-neon-bg text-neon-textPrimary">Operator</option>
+                    <option value="Pimpinan" className="bg-neon-bg text-neon-textPrimary">Pimpinan (Read Only)</option>
+                  </select>
+                </div>
+
+                <button onClick={handleLogout} className="text-xs bg-neon-danger/20 hover:bg-neon-danger text-neon-danger hover:text-white px-3.5 py-2 rounded-2xl font-bold border border-neon-danger/50 transition-all shadow-[0_0_12px_rgba(255,51,102,0.3)]">
+                  Keluar
+                </button>
+
+              </div>
+            </div>
+          </header>
+
+          <div className="flex flex-1">
+            <aside className="w-64 bg-neon-sidebar border-r border-neon-cyan/25 flex flex-col justify-between p-5 hidden md:flex shadow-[4px_0_20px_rgba(0,0,0,0.4)] no-print">
+              <div className="space-y-3">
+                <div className="px-3 py-1 text-[10px] font-extrabold text-neon-textMuted uppercase tracking-widest">Main Menu</div>
+                
+                {(role === "Administrator" || role === "Pimpinan") && (
+                  <button 
+                    onClick={() => handleMenuClick("dashboard")}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-semibold transition-all ${activeTab === 'dashboard' ? 'bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] border border-neon-cyan shadow-[0_0_20px_rgba(0,229,255,0.3)] font-bold' : 'text-neon-textSecondary hover:bg-white/10 hover:text-neon-textPrimary'}`}
+                  >
+                    <i data-lucide="layout-dashboard" className={`w-4 h-4 ${activeTab === 'dashboard' ? 'text-[#031323]' : 'text-neon-cyan'}`}></i>
+                    <span>Dashboard Utama</span>
+                  </button>
+                )}
+
+                {(role === "Administrator" || role === "Operator") && (
+                  <button 
+                    onClick={() => handleMenuClick("data-pks")}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-semibold transition-all ${activeTab === 'data-pks' ? 'bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] border border-neon-cyan shadow-[0_0_20px_rgba(0,229,255,0.3)] font-bold' : 'text-neon-textSecondary hover:bg-white/10 hover:text-neon-textPrimary'}`}
+                  >
+                    <i data-lucide="file-text" className={`w-4 h-4 ${activeTab === 'data-pks' ? 'text-[#031323]' : 'text-neon-cyan'}`}></i>
+                    <span>Data PKS</span>
+                    <span className="ml-auto bg-neon-cyan/30 text-neon-cyan text-[10px] px-2 py-0.5 rounded-full font-bold border border-neon-cyan/40">{pksList.length}</span>
+                  </button>
+                )}
+
+                {(role === "Administrator" || role === "Operator") && (
+                  <button 
+                    onClick={handleOpenTambahForm}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-semibold transition-all ${activeTab === 'tambah-pks' ? 'bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] border border-neon-cyan shadow-[0_0_20px_rgba(0,229,255,0.3)] font-bold' : 'text-neon-textSecondary hover:bg-white/10 hover:text-neon-textPrimary'}`}
+                  >
+                    <i data-lucide="plus-circle" className={`w-4 h-4 ${activeTab === 'tambah-pks' ? 'text-[#031323]' : 'text-neon-cyan'}`}></i>
+                    <span>Tambah PKS Baru</span>
+                  </button>
+                )}
+
+                {role === "Administrator" && (
+                  <button 
+                    onClick={() => { resetFilters(); fetchUsers(); setActiveTab("pengaturan-user"); }}
+                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-semibold transition-all ${activeTab === 'pengaturan-user' ? 'bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] border border-neon-cyan shadow-[0_0_20px_rgba(0,229,255,0.3)] font-bold' : 'text-neon-textSecondary hover:bg-white/10 hover:text-neon-textPrimary'}`}
+                  >
+                    <i data-lucide="users" className={`w-4 h-4 ${activeTab === 'pengaturan-user' ? 'text-[#031323]' : 'text-neon-cyan'}`}></i>
+                    <span>Manajemen Pengguna</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="p-3 bg-neon-secondary/60 rounded-2xl border border-neon-cyan/20 text-center">
+                <p className="text-[10px] font-bold text-neon-cyan">SINERGI v3.0</p>
+                <p className="text-[9px] text-neon-textMuted">Pusdatin KKP RI © 2026</p>
+              </div>
+            </aside>
+
+            <main className="flex-1 p-6 lg:p-8 custom-scrollbar overflow-y-auto space-y-8">
+              
+              {activeTab === "dashboard" && (role === "Administrator" || role === "Pimpinan") && (
+                <div className="space-y-8">
+                  
+                  {/* GLOBAL FILTER BAR */}
+                  <div className="glass-panel p-5 rounded-3xl no-print border border-neon-cyan/40 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-neon-cyan/20 pb-3">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="p-2 bg-neon-cyan/20 text-neon-cyan rounded-xl border border-neon-cyan/40 shadow-[0_0_10px_rgba(0,229,255,0.2)]">
+                          <i data-lucide="filter" className="w-4 h-4"></i>
+                        </div>
+                        <span className="text-xs font-bold text-neon-textPrimary tracking-wide uppercase">Global Filter Panel</span>
+                      </div>
+                      <button 
+                        onClick={resetFilters}
+                        className="text-xs text-neon-cyan hover:text-white font-bold px-3 py-1.5 rounded-xl bg-neon-cyan/15 border border-neon-cyan/40 transition-all shadow-[0_0_10px_rgba(0,229,255,0.14)] flex items-center gap-1.5"
+                      >
+                        <i data-lucide="rotate-ccw" className="w-3.5 h-3.5"></i>
+                        <span>Reset Filter</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neon-textSecondary uppercase tracking-wider">Tahun</label>
+                        <select 
+                          value={tahunFilter} 
+                          onChange={(e) => setTahunFilter(e.target.value)}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-neon-textPrimary focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan shadow-sm"
+                        >
+                          <option value="ALL">Tahun (Semua)</option>
+                          {listTahun.map(th => <option key={th} value={th}>{th}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neon-textSecondary uppercase tracking-wider">Mitra Kerja Sama</label>
+                        <select 
+                          value={mitraFilter} 
+                          onChange={(e) => setMitraFilter(e.target.value)}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-neon-textPrimary focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan shadow-sm"
+                        >
+                          <option value="ALL">Mitra (Semua)</option>
+                          {listMitra.map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neon-textSecondary uppercase tracking-wider">Masa Berlaku</label>
+                        <select 
+                          value={masaBerlakuFilter} 
+                          onChange={(e) => setMasaBerlakuFilter(e.target.value)}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-neon-textPrimary focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan shadow-sm"
+                        >
+                          <option value="ALL">Durasi (Semua)</option>
+                          <option value="1 Tahun">1 Tahun</option>
+                          <option value="2 Tahun">2 Tahun</option>
+                          <option value="3 Tahun">3 Tahun</option>
+                          <option value="4 Tahun">4 Tahun</option>
+                          <option value="5 Tahun">5 Tahun</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neon-textSecondary uppercase tracking-wider">Unit Kerja Es. 1</label>
+                        <select 
+                          value={unitFilter} 
+                          onChange={(e) => {
+                            setUnitFilter(e.target.value);
+                            setUnitEs2Filter("ALL");
+                          }}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-neon-textPrimary focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan shadow-sm"
+                        >
+                          <option value="ALL">Eselon 1 (Semua)</option>
+                          {Object.keys(ESELON_2_MAPPING).map(u => (
+                            <option key={u} value={u}>{u}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-neon-textSecondary uppercase tracking-wider">Status Capaian</label>
+                        <select 
+                          value={statusFilter} 
+                          onChange={(e) => { setStatusFilter(e.target.value); setExpiryFilter("ALL"); }}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-neon-textPrimary focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan shadow-sm"
+                        >
+                          <option value="ALL">Status (Semua)</option>
+                          <option value="Hijau">Hijau</option>
+                          <option value="Kuning">Kuning</option>
+                          <option value="Merah">Merah</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 no-print">
+                    <div onClick={() => { setStatusFilter("ALL"); setExpiryFilter("ALL"); }} className="glass-panel glass-panel-hover p-4 rounded-3xl cursor-pointer transition-all flex flex-col justify-between border-neon-cyan/50 shadow-[0_0_20px_rgba(0,229,255,0.14)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-neon-textSecondary">Total PKS</span>
+                        <div className="w-8 h-8 rounded-full bg-neon-cyan/25 flex items-center justify-center border border-neon-cyan/50 shadow-[0_0_10px_#00E5FF]">
+                          <i data-lucide="file-stack" className="w-4 h-4 text-neon-cyan"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-neon-textPrimary">{stats.total}</div>
+                        <span className="text-[10px] text-neon-textMuted">Seluruh Dokumen</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => { setStatusFilter("Hijau"); setExpiryFilter("ALL"); }} className="glass-panel glass-panel-hover p-4 rounded-3xl cursor-pointer transition-all flex flex-col justify-between border-neon-teal/50 shadow-[0_0_20px_rgba(0,245,212,0.14)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-neon-textSecondary">Status Hijau</span>
+                        <div className="w-8 h-8 rounded-full bg-neon-teal/25 flex items-center justify-center border border-neon-teal/50 shadow-[0_0_10px_#00F5D4]">
+                          <i data-lucide="check-circle-2" className="w-4 h-4 text-neon-teal"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-neon-teal">{stats.hijau}</div>
+                        <span className="text-[10px] text-neon-textMuted">Sudah Implementasi</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => { setStatusFilter("Kuning"); setExpiryFilter("ALL"); }} className="glass-panel glass-panel-hover p-4 rounded-3xl cursor-pointer transition-all flex flex-col justify-between border-neon-warning/50 shadow-[0_0_20px_rgba(255,214,90,0.14)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-neon-textSecondary">Status Kuning</span>
+                        <div className="w-8 h-8 rounded-full bg-neon-warning/25 flex items-center justify-center border border-neon-warning/50 shadow-[0_0_10px_#FFD65A]">
+                          <i data-lucide="alert-triangle" className="w-4 h-4 text-neon-warning"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-neon-warning">{stats.kuning}</div>
+                        <span className="text-[10px] text-neon-textMuted">Terlambat Implementasi</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => { setStatusFilter("Merah"); setExpiryFilter("ALL"); }} className="glass-panel glass-panel-hover p-4 rounded-3xl cursor-pointer transition-all flex flex-col justify-between border-neon-danger/50 shadow-[0_0_20px_rgba(255,77,145,0.14)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-neon-textSecondary">Status Merah</span>
+                        <div className="w-8 h-8 rounded-full bg-neon-danger/25 flex items-center justify-center border border-neon-danger/50 shadow-[0_0_10px_#FF4D91]">
+                          <i data-lucide="alert-octagon" className="w-4 h-4 text-neon-danger"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-neon-danger">{stats.merah}</div>
+                        <span className="text-[10px] text-neon-textMuted">Belum Terimplementasi</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => { setExpiryFilter("AKAN_BERAKHIR"); setStatusFilter("ALL"); setActiveTab("dashboard"); }} className="glass-panel glass-panel-hover p-4 rounded-3xl cursor-pointer transition-all flex flex-col justify-between border-neon-orange/50 shadow-[0_0_20px_rgba(255,191,77,0.14)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-neon-textSecondary">Exp ≤ 120 Hari</span>
+                        <div className="w-8 h-8 rounded-full bg-neon-orange/25 flex items-center justify-center border border-neon-orange/50 shadow-[0_0_10px_#FFBF4D]">
+                          <i data-lucide="clock" className="w-4 h-4 text-neon-orange"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-neon-orange">{expiringSoonList.length}</div>
+                        <span className="text-[10px] text-neon-textMuted">Segera Berakhir</span>
+                      </div>
+                    </div>
+
+                    <div onClick={() => { setExpiryFilter("SUDAH_BERAKHIR"); setStatusFilter("ALL"); setActiveTab("dashboard"); }} className="glass-panel glass-panel-hover p-4 rounded-3xl cursor-pointer transition-all flex flex-col justify-between border-neon-crimson/50 shadow-[0_0_20px_rgba(255,77,141,0.14)]">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[11px] font-bold text-neon-textSecondary">Exp (Kadaluarsa)</span>
+                        <div className="w-8 h-8 rounded-full bg-neon-crimson/25 flex items-center justify-center border border-neon-crimson/50 shadow-[0_0_10px_#FF4D8D]">
+                          <i data-lucide="x-circle" className="w-4 h-4 text-neon-crimson"></i>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-extrabold text-neon-crimson">
+                          {pksList.filter(item => {
+                            if (!item.tanggalSelesai) return false;
+                            const end = new Date(parseDateToInput(item.tanggalSelesai));
+                            const today = new Date(); today.setHours(0,0,0,0);
+                            return !isNaN(end.getTime()) && end < today;
+                          }).length}
+                        </div>
+                        <span className="text-[10px] text-neon-textMuted">Masa Berlaku Habis</span>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* PANEL TOMBOL PINTAS ESELON 1 & DROPDOWN ESELON 2 */}
+                  <div className="glass-panel p-6 rounded-3xl border border-neon-cyan/40 space-y-4 no-print">
+                    <div className="flex items-center justify-between border-b border-neon-cyan/20 pb-3">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="p-2 bg-neon-cyan/20 text-neon-cyan rounded-xl border border-neon-cyan/40 shadow-[0_0_10px_rgba(0,229,255,0.2)]">
+                          <i data-lucide="building" className="w-4 h-4"></i>
+                        </div>
+                        <span className="text-xs font-bold text-neon-textPrimary tracking-wide uppercase">Pintasan Filter Unit Kerja Eselon 1</span>
+                      </div>
+                      {unitFilter !== "ALL" && (
+                        <button 
+                          onClick={() => { setUnitFilter("ALL"); setUnitEs2Filter("ALL"); }}
+                          className="text-[11px] text-neon-cyan hover:text-white font-bold px-3 py-1 rounded-xl bg-neon-cyan/15 border border-neon-cyan/40 transition-all"
+                        >
+                          Tampilkan Semua Unit Kerja
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                      {[
+                        { label: "SETJEN", full: "Sekretariat Jenderal", desc: "" },
+                        { label: "DJPRL", full: "Direktorat Jenderal Penataan Ruang Laut", desc: "" },
+                        { label: "DJPK", full: "Direktorat Jenderal Pengelolaan Kelautan", desc: "" },
+                        { label: "DJPT", full: "Direktorat Jenderal Perikanan Tangkap", desc: "" },
+                        { label: "DJPB", full: "Direktorat Jenderal Perikanan Budi Daya", desc: "" },
+                        { label: "DJPDSPKP", full: "Direktorat Jenderal Penguatan Daya Saing Produk Kelautan dan Perikanan", desc: "" },
+                        { label: "DJPSDKP", full: "Direktorat Jenderal Pengawasan Sumber Daya Kelautan dan Perikanan", desc: "" },
+                        { label: "ITJEN", full: "Inspektorat Jenderal", desc: "" },
+                        { label: "BPPSDMKP", full: "Badan Penyuluhan dan Pengembangan Sumber Daya Manusia Kelautan dan Perikanan", desc: "" },
+                        { label: "BPPMHKP", full: "Badan Pengendalian dan Pengawasan Mutu Hasil Kelautan dan Perikanan", desc: "" }
+                      ].map((item, idx) => {
+                        const isActive = unitFilter === item.full;
+                        return (
+                          <button
+                            key={idx}
+                            onClick={() => {
+                              setUnitFilter(item.full);
+                              setUnitEs2Filter("ALL");
+                            }}
+                            className={`p-3.5 rounded-2xl text-left transition-all flex flex-col justify-between border cursor-pointer ${
+                              isActive 
+                                ? 'bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] border-neon-cyan shadow-[0_0_15px_rgba(0,229,255,0.4)] font-bold' 
+                                : 'bg-[#07172F]/80 hover:bg-neon-panelSec text-neon-textPrimary border-neon-cyan/30 hover:border-neon-cyan/70'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className={`text-xs font-extrabold ${isActive ? 'text-[#031323]' : 'text-neon-cyan'}`}>{item.label}</span>
+                              <i data-lucide="filter" className={`w-3.5 h-3.5 ${isActive ? 'text-[#031323]' : 'text-neon-cyan/70'}`}></i>
+                            </div>
+                            <span className={`text-[10px] leading-tight line-clamp-2 ${isActive ? 'text-[#031323]/90 font-semibold' : 'text-neon-textSecondary'}`}>
+                              {item.desc}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="pt-3 border-t border-neon-cyan/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="w-full sm:max-w-md space-y-1">
+                        <label className="text-[10px] font-bold text-neon-cyan uppercase tracking-wider flex items-center gap-1.5">
+                          <i data-lucide="git-branch" className="w-3.5 h-3.5"></i>
+                          <span>Filter Unit Kerja Eselon 2 {unitFilter !== "ALL" ? `(${unitFilter})` : ""}</span>
+                        </label>
+                        <select
+                          value={unitEs2Filter}
+                          onChange={(e) => setUnitEs2Filter(e.target.value)}
+                          disabled={unitFilter === "ALL"}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-neon-textPrimary focus:outline-none focus:border-neon-cyan focus:ring-1 focus:ring-neon-cyan shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <option value="ALL">
+                            {unitFilter === "ALL" ? "-- Pilih Eselon 1 Terlebih Dahulu --" : "Semua Eselon 2"}
+                          </option>
+                          {dashboardEselon2List.map((es2, idx) => (
+                            <option key={idx} value={es2}>{es2}</option>
+                          ))}
+                        </select>
+                      </div>
+                      {unitEs2Filter !== "ALL" && (
+                        <button
+                          onClick={() => setUnitEs2Filter("ALL")}
+                          className="self-start sm:self-end text-[11px] text-neon-cyan hover:text-white font-bold px-3 py-2 rounded-xl bg-neon-cyan/15 border border-neon-cyan/40 transition-all"
+                        >
+                          Reset Eselon 2
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* TABEL UTAMA DENGAN FITUR SORTING PADA JUDUL PKS & MITRA */}
+                  <div className="glass-panel p-6 rounded-3xl border border-neon-cyan/40 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neon-cyan/20 pb-4 no-print">
+                      <div>
+                        <h3 className="text-sm font-bold text-neon-textPrimary">Data Kerja Sama</h3>
+                        <p className="text-xs text-neon-textMuted">Klik pada header Judul PKS atau Mitra untuk mengurutkan (Ascending/Descending). Menampilkan {filteredPks.length} PKS terfilter</p>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <button onClick={exportToPDF} className="flex items-center space-x-2 bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] px-4 py-2 rounded-2xl text-xs font-bold shadow-[0_0_15px_rgba(0,229,255,0.3)] hover:shadow-[0_0_20px_rgba(0,229,255,0.5)] transition-all">
+                          <i data-lucide="printer" className="w-4 h-4"></i>
+                          <span>Export PDF</span>
+                        </button>
+                        <button onClick={exportToDoc} className="flex items-center space-x-2 bg-neon-panelSec border border-neon-cyan/50 hover:bg-neon-cyan/20 text-neon-cyan px-4 py-2 rounded-2xl text-xs font-bold transition-all">
+                          <i data-lucide="file-text" className="w-4 h-4"></i>
+                          <span>Export DOC</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="overflow-x-auto custom-scrollbar">
+                      <table className="w-full text-left text-xs border-collapse min-w-[1000px]">
+                        <thead>
+                          <tr className="border-b border-neon-cyan/30 text-neon-cyan font-bold bg-neon-secondary/40">
+                            <th className="p-3 w-[12%]">Nomor PKS</th>
+                            
+                            {/* Judul PKS dengan Sorting */}
+                            <th 
+                              className="p-3 w-[22%] cursor-pointer select-none hover:text-white transition-colors"
+                              onClick={() => {
+                                if (judulSortOrder === null || judulSortOrder === "desc") {
+                                  setJudulSortOrder("asc");
+                                  setMitraSortOrder(null);
+                                } else {
+                                  setJudulSortOrder("desc");
+                                  setMitraSortOrder(null);
+                                }
+                              }}
+                            >
+                              Judul PKS {judulSortOrder === "asc" ? "▲" : judulSortOrder === "desc" ? "▼" : "↕"}
+                            </th>
+
+                            <th className="p-3 w-[12%]">Eselon 1</th>
+                            <th className="p-3 w-[12%]">Eselon 2</th>
+                            
+                            {/* Mitra dengan Sorting */}
+                            <th 
+                              className="p-3 w-[11%] cursor-pointer select-none hover:text-white transition-colors"
+                              onClick={() => {
+                                if (mitraSortOrder === null || mitraSortOrder === "desc") {
+                                  setMitraSortOrder("asc");
+                                  setJudulSortOrder(null);
+                                } else {
+                                  setMitraSortOrder("desc");
+                                  setJudulSortOrder(null);
+                                }
+                              }}
+                            >
+                              Mitra {mitraSortOrder === "asc" ? "▲" : mitraSortOrder === "desc" ? "▼" : "↕"}
+                            </th>
+
+                            <th className="p-3 w-[9%] text-center">Periode</th>
+                            <th className="p-3 w-[18%]">Ruang Lingkup</th>
+                            <th className="p-3 w-[4%] text-center">Dokumen</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neon-cyan/10">
+                          {paginatedPks.length === 0 ? (
+                            <tr>
+                              <td colSpan="8" className="p-4 text-center text-neon-textMuted">Tidak ada data PKS yang sesuai dengan filter.</td>
+                            </tr>
+                          ) : (
+                            paginatedPks.map((item) => (
+                              <tr key={item.id} className="hover:bg-neon-panelSec/50 transition-all align-top">
+                                <td className="p-3 font-semibold text-neon-textSecondary">{item.nomorPks}</td>
+                                <td className="p-3 font-bold text-neon-textPrimary leading-relaxed">{item.judul}</td>
+                                <td className="p-3 text-neon-textSecondary font-semibold">{item.unitKerjaEs1 || item.unitKerja || '-'}</td>
+                                <td className="p-3 text-neon-textSecondary">{item.unitKerjaEs2 || '-'}</td>
+                                <td className="p-3 text-neon-textSecondary">{item.namaMitra}</td>
+                                <td className="p-3 text-neon-textMuted text-center whitespace-nowrap">
+                                  <div>{formatDateFormatted(item.tanggalMulai)}</div>
+                                  <div className="font-bold text-neon-cyan my-0.5">s.d.</div>
+                                  <div>{formatDateFormatted(item.tanggalSelesai)}</div>
+                                </td>
+                                <td className="p-3 text-neon-textMuted whitespace-pre-line leading-relaxed">
+                                  {formatRuangLingkup(item.ruangLingkup)}
+                                </td>
+                                <td className="p-3 text-center">
+                                  {(item.dokumenUploaded || item.dokumenUrl) ? (
+                                    <a href={item.dokumenUploaded || item.dokumenUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center p-2 bg-neon-cyan/20 text-neon-cyan rounded-xl hover:bg-neon-cyan hover:text-[#031323] transition-all shadow-[0_0_8px_rgba(0,229,255,0.2)]" title="Lihat Dokumen">
+                                      <i data-lucide="file-text" className="w-4 h-4"></i>
+                                    </a>
+                                  ) : (
+                                    <span className="text-neon-textMuted text-[10px]">-</span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {filteredPks.length > 0 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-neon-cyan/20 text-xs gap-3 no-print">
+                        <span className="text-neon-textMuted">
+                          Menampilkan {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredPks.length)} dari {filteredPks.length} data
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title="Kembali ke Halaman Awal"
+                          >
+                            &laquo; Awal
+                          </button>
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            Sebelumnya
+                          </button>
+                          <span className="px-3 py-1 bg-neon-panel rounded-xl text-neon-textPrimary font-bold border border-neon-cyan/30">
+                            {currentPage} / {totalPages}
+                          </span>
+                          <button
+                            disabled={currentPage >= totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            Selanjutnya
+                          </button>
+                          <button
+                            disabled={currentPage >= totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title="Lompat ke Halaman Akhir"
+                          >
+                            Akhir &raquo;
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                  </div>
+
+                </div>
+              )}
+
+              {activeTab === "data-pks" && (role === "Administrator" || role === "Operator") && (
+                <div className="space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-base font-extrabold text-neon-textPrimary">Kelola Data PKS</h2>
+                      <p className="text-xs text-neon-textMuted">Daftar seluruh Perjanjian Kerja Sama (Halaman {currentPage} dari {totalPages})</p>
+                    </div>
+                    <button 
+                      onClick={handleOpenTambahForm}
+                      className="flex items-center space-x-2 bg-gradient-to-r from-neon-cyan to-neon-blue text-[#031323] px-4 py-2.5 rounded-2xl text-xs font-bold shadow-[0_0_15px_rgba(0,229,255,0.3)] transition-all cursor-pointer self-start sm:self-auto"
+                    >
+                      <i data-lucide="plus" className="w-4 h-4"></i>
+                      <span>Tambah PKS Baru</span>
+                    </button>
+                  </div>
+
+                  <div className="glass-panel p-4 rounded-3xl border border-neon-cyan/40 space-y-4">
+                    <div className="overflow-x-auto custom-scrollbar">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-neon-cyan/30 text-neon-cyan font-bold bg-neon-secondary/40">
+                            <th className="p-3">Nomor PKS</th>
+                            <th className="p-3">Judul PKS</th>
+                            <th className="p-3">Eselon 1</th>
+                            <th className="p-3">Eselon 2</th>
+                            <th className="p-3">Mitra</th>
+                            <th className="p-3 text-center">Periode</th>
+                            <th className="p-3 text-center">Skor</th>
+                            <th className="p-3 text-center">Status</th>
+                            <th className="p-3 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neon-cyan/10">
+                          {paginatedPks.length === 0 ? (
+                            <tr>
+                              <td colSpan="9" className="p-4 text-center text-neon-textMuted">Data PKS belum ada / tidak ditemukan.</td>
+                            </tr>
+                          ) : (
+                            paginatedPks.map((item) => (
+                              <tr key={item.id} className="hover:bg-neon-panelSec/50 transition-all align-top">
+                                <td className="p-3 font-semibold text-neon-textSecondary">{item.nomorPks}</td>
+                                <td className="p-3 font-bold text-neon-textPrimary max-w-xs">{item.judul}</td>
+                                <td className="p-3 text-neon-textSecondary font-semibold">{item.unitKerjaEs1 || item.unitKerja || '-'}</td>
+                                <td className="p-3 text-neon-textSecondary">{item.unitKerjaEs2 || '-'}</td>
+                                <td className="p-3 text-neon-textSecondary">{item.namaMitra}</td>
+                                <td className="p-3 text-neon-textMuted text-center whitespace-nowrap">
+                                  <div>{formatDateFormatted(item.tanggalMulai)}</div>
+                                  <div className="font-bold text-neon-cyan my-0.5">s.d.</div>
+                                  <div>{formatDateFormatted(item.tanggalSelesai)}</div>
+                                </td>
+                                <td className="p-3 text-center font-bold text-neon-cyan">{item.skorAkhir}%</td>
+                                <td className="p-3 text-center">
+                                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                                    item.statusCapaian === 'Hijau' ? 'bg-neon-teal/20 text-neon-teal border-neon-teal/40' :
+                                    item.statusCapaian === 'Kuning' ? 'bg-neon-warning/20 text-neon-warning border-neon-warning/40' :
+                                    'bg-neon-danger/20 text-neon-danger border-neon-danger/40'
+                                  }`}>
+                                    {item.statusCapaian}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-center">
+                                  <div className="flex items-center justify-center space-x-2">
+                                    {(item.dokumenUploaded || item.dokumenUrl) && (
+                                      <a href={item.dokumenUploaded || item.dokumenUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 bg-neon-cyan/20 text-neon-cyan rounded-lg hover:bg-neon-cyan hover:text-[#031323] transition-all" title="Lihat Dokumen">
+                                        <i data-lucide="file-text" className="w-3.5 h-3.5"></i>
+                                      </a>
+                                    )}
+                                    <button onClick={() => handleEditClick(item)} className="p-1.5 bg-neon-warning/20 text-neon-warning rounded-lg hover:bg-neon-warning hover:text-[#031323]" title="Edit PKS">
+                                      <i data-lucide="edit" className="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <button onClick={() => handleDeletePks(item.id)} className="p-1.5 bg-neon-danger/20 text-neon-danger rounded-lg hover:bg-neon-danger hover:text-white" title="Hapus PKS">
+                                      <i data-lucide="trash-2" className="w-3.5 h-3.5"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {filteredPks.length > 0 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between pt-4 border-t border-neon-cyan/20 text-xs gap-3 no-print">
+                        <span className="text-neon-textMuted">
+                          Menampilkan {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredPks.length)} dari {filteredPks.length} data
+                        </span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(1)}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title="Kembali ke Halaman Awal"
+                          >
+                            &laquo; Awal
+                          </button>
+                          <button
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            Sebelumnya
+                          </button>
+                          <span className="px-3 py-1 bg-neon-panel rounded-xl text-neon-textPrimary font-bold border border-neon-cyan/30">
+                            {currentPage} / {totalPages}
+                          </span>
+                          <button
+                            disabled={currentPage >= totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                          >
+                            Selanjutnya
+                          </button>
+                          <button
+                            disabled={currentPage >= totalPages}
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="px-3 py-1.5 rounded-xl border border-neon-cyan/40 bg-neon-secondary text-neon-cyan font-bold hover:bg-neon-panelSec disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                            title="Lompat ke Halaman Akhir"
+                          >
+                            Akhir &raquo;
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "tambah-pks" && (role === "Administrator" || role === "Operator") && (
+                <div className="space-y-6 max-w-4xl mx-auto">
+                  <div>
+                    <h2 className="text-base font-extrabold text-neon-textPrimary">{editingId ? "Edit Data PKS" : "Form Tambah PKS Baru"}</h2>
+                    <p className="text-xs text-neon-textMuted">Lengkapi rincian Perjanjian Kerja Sama berikut (Urutan Sesuai Database)</p>
+                  </div>
+
+                  <form onSubmit={handleSavePks} className="glass-panel p-6 rounded-3xl border border-neon-cyan/40 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Nomor PKS *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          placeholder="Contoh: 012/PKS/PUSDATIN/KKP/I/2024"
+                          value={formData.nomorPks} 
+                          onChange={(e) => setFormData({...formData, nomorPks: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Jenis Kerja Sama *</label>
+                        <select 
+                          value={formData.jenis} 
+                          onChange={(e) => setFormData({...formData, jenis: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan"
+                        >
+                          <option value="Nasional">Nasional</option>
+                          <option value="Internasional">Internasional</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-neon-textSecondary block mb-1">Judul Kerja Sama *</label>
+                      <input 
+                        type="text" 
+                        required 
+                        placeholder="Judul lengkap perihal PKS..."
+                        value={formData.judul} 
+                        onChange={(e) => setFormData({...formData, judul: e.target.value})}
+                        className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Unit Kerja Eselon 1 *</label>
+                        <select 
+                          value={formData.unitKerjaEs1} 
+                          onChange={(e) => {
+                            const newEs1 = e.target.value;
+                            const availableEs2 = ESELON_2_MAPPING[newEs1] || [];
+                            setFormData(prev => ({
+                              ...prev,
+                              unitKerjaEs1: newEs1,
+                              unitKerjaEs2: availableEs2.length > 0 ? availableEs2[0] : ""
+                            }));
+                          }}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan"
+                        >
+                          {Object.keys(ESELON_2_MAPPING).map(es1 => (
+                            <option key={es1} value={es1}>{es1}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Unit Kerja Eselon 2 *</label>
+                        <select 
+                          value={formData.unitKerjaEs2} 
+                          onChange={(e) => setFormData(prev => ({...prev, unitKerjaEs2: e.target.value}))}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan"
+                        >
+                          {activeEselon2List.map(es2 => (
+                            <option key={es2} value={es2}>{es2}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">ID Mitra</label>
+                        <input 
+                          type="text" 
+                          placeholder="ID Mitra (Opsional)"
+                          value={formData.mitraId} 
+                          onChange={(e) => setFormData({...formData, mitraId: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Nama Mitra *</label>
+                        <input 
+                          type="text" 
+                          required 
+                          placeholder="PT / Instansi Mitra Kerja Sama"
+                          value={formData.namaMitra} 
+                          onChange={(e) => setFormData({...formData, namaMitra: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">PIC Mitra</label>
+                        <input 
+                          type="text" 
+                          placeholder="Nama Penanggung Jawab Mitra"
+                          value={formData.picMitra} 
+                          onChange={(e) => setFormData({...formData, picMitra: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Kontak Mitra</label>
+                        <input 
+                          type="text" 
+                          placeholder="Nomor Telepon / HP / Email"
+                          value={formData.kontakMitra} 
+                          onChange={(e) => setFormData({...formData, kontakMitra: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Tanggal Mulai *</label>
+                        <input 
+                          type="date" 
+                          required 
+                          value={formData.tanggalMulai} 
+                          onChange={(e) => setFormData({...formData, tanggalMulai: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Tanggal Selesai *</label>
+                        <input 
+                          type="date" 
+                          required 
+                          value={formData.tanggalSelesai} 
+                          onChange={(e) => setFormData({...formData, tanggalSelesai: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-neon-textSecondary block mb-1">Ruang Lingkup</label>
+                      <textarea 
+                        rows="3" 
+                        placeholder="Rincian poin-poin ruang lingkup kerja sama..."
+                        value={formData.ruangLingkup} 
+                        onChange={(e) => setFormData({...formData, ruangLingkup: e.target.value})}
+                        className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-3 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan"
+                      ></textarea>
+                    </div>
+
+                    <div className="p-4 bg-neon-secondary/40 rounded-2xl border border-neon-cyan/30 space-y-4">
+                      <h4 className="text-xs font-bold text-neon-cyan uppercase tracking-wider">Penilaian Indikator (0 - 100%)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="text-[11px] font-bold text-neon-textSecondary block mb-1">Capaian Kegiatan (40%)</label>
+                          <input 
+                            type="number" 
+                            min="0" max="100" 
+                            placeholder="0-100"
+                            value={formData.capaianKegiatan} 
+                            onChange={(e) => setFormData({...formData, capaianKegiatan: e.target.value})}
+                            className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-neon-textSecondary block mb-1">Capaian Output (40%)</label>
+                          <input 
+                            type="number" 
+                            min="0" max="100" 
+                            placeholder="0-100"
+                            value={formData.capaianOutput} 
+                            onChange={(e) => setFormData({...formData, capaianOutput: e.target.value})}
+                            className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[11px] font-bold text-neon-textSecondary block mb-1">Kelengkapan Dok. (20%)</label>
+                          <input 
+                            type="number" 
+                            min="0" max="100" 
+                            placeholder="0-100"
+                            value={formData.kelengkapanDokumen} 
+                            onChange={(e) => setFormData({...formData, kelengkapanDokumen: e.target.value})}
+                            className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-neon-textSecondary block mb-1">Upload Dokumen (PDF/Word)</label>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleFileUpload}
+                        className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textMuted file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-neon-cyan file:text-[#031323] hover:file:bg-neon-teal cursor-pointer"
+                      />
+                      {formData.dokumenFile && (
+                        <p className="text-[11px] text-neon-teal font-medium mt-1">File terpilih: {formData.dokumenFile}</p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-3 pt-4 border-t border-neon-cyan/20">
+                      <button 
+                        type="button" 
+                        onClick={() => handleMenuClick("data-pks")}
+                        className="px-5 py-2.5 bg-neon-secondary/80 hover:bg-neon-panelSec text-neon-textSecondary rounded-2xl text-xs font-bold border border-neon-cyan/30 transition-all cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button 
+                        type="submit" 
+                        className="px-6 py-2.5 bg-gradient-to-r from-neon-cyan to-neon-teal text-[#031323] rounded-2xl text-xs font-extrabold shadow-[0_0_15px_rgba(0,229,255,0.3)] hover:shadow-[0_0_20px_rgba(0,229,255,0.6)] transition-all cursor-pointer"
+                      >
+                        {editingId ? "Simpan Perubahan" : "Simpan Data PKS"}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {activeTab === "pengaturan-user" && role === "Administrator" && (
+                <div className="space-y-6 max-w-4xl mx-auto">
+                  <div>
+                    <h2 className="text-base font-extrabold text-neon-textPrimary">Manajemen Pengguna</h2>
+                    <p className="text-xs text-neon-textMuted">Kelola akun akses pengguna SINERGI</p>
+                  </div>
+
+                  <form onSubmit={handleSaveUser} className="glass-panel p-6 rounded-3xl border border-neon-cyan/40 space-y-4">
+                    <h3 className="text-xs font-bold text-neon-cyan uppercase tracking-wider">{editingUser ? "Edit User" : "Tambah User Baru"}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Username / NIP</label>
+                        <input 
+                          type="text" 
+                          required 
+                          value={userFormData.username} 
+                          onChange={(e) => setUserFormData({...userFormData, username: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Password</label>
+                        <input 
+                          type="password" 
+                          required 
+                          value={userFormData.password} 
+                          onChange={(e) => setUserFormData({...userFormData, password: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan" 
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-neon-textSecondary block mb-1">Role / Hak Akses</label>
+                        <select 
+                          value={userFormData.role} 
+                          onChange={(e) => setUserFormData({...userFormData, role: e.target.value})}
+                          className="w-full bg-[#07172F] border border-neon-cyan/40 rounded-2xl p-2.5 text-xs text-neon-textPrimary focus:outline-none focus:border-neon-cyan"
+                        >
+                          <option value="Administrator">Administrator</option>
+                          <option value="Operator">Operator</option>
+                          <option value="Pimpinan">Pimpinan</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="flex justify-end space-x-3 pt-2">
+                      {editingUser && (
+                        <button 
+                          type="button" 
+                          onClick={() => { setEditingUser(null); setUserFormData({ username: "", password: "", role: "Operator" }); }}
+                          className="px-4 py-2 bg-neon-secondary text-neon-textSecondary rounded-2xl text-xs font-bold border border-neon-cyan/30"
+                        >
+                          Batal
+                        </button>
+                      )}
+                      <button 
+                        type="submit" 
+                        className="px-5 py-2 bg-gradient-to-r from-neon-cyan to-neon-teal text-[#031323] rounded-2xl text-xs font-bold shadow-[0_0_12px_rgba(0,229,255,0.3)]"
+                      >
+                        {editingUser ? "Perbarui User" : "Tambah User"}
+                      </button>
+                    </div>
+                  </form>
+
+                  <div className="glass-panel p-4 rounded-3xl border border-neon-cyan/40">
+                    <div className="overflow-x-auto custom-scrollbar">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-neon-cyan/30 text-neon-cyan font-bold bg-neon-secondary/40">
+                            <th className="p-3">Username</th>
+                            <th className="p-3">Role</th>
+                            <th className="p-3 text-center">Aksi</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neon-cyan/10">
+                          {userList.length === 0 ? (
+                            <tr>
+                              <td colSpan="3" className="p-4 text-center text-neon-textMuted">Belum ada user terdaftar di database.</td>
+                            </tr>
+                          ) : (
+                            userList.map((u, idx) => (
+                              <tr key={idx} className="hover:bg-neon-panelSec/50 transition-all">
+                                <td className="p-3 font-semibold text-neon-textPrimary">{u.username}</td>
+                                <td className="p-3 text-neon-textSecondary">{u.role}</td>
+                                <td className="p-3 text-center">
+                                  <div className="flex items-center justify-center space-x-2">
+                                    <button onClick={() => handleEditUser(u)} className="p-1.5 bg-neon-warning/20 text-neon-warning rounded-lg hover:bg-neon-warning hover:text-[#031323]">
+                                      <i data-lucide="edit" className="w-3.5 h-3.5"></i>
+                                    </button>
+                                    <button onClick={() => handleDeleteUser(u.username)} className="p-1.5 bg-neon-danger/20 text-neon-danger rounded-lg hover:bg-neon-danger hover:text-white">
+                                      <i data-lucide="x" className="w-3.5 h-3.5"></i>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </main>
+          </div>
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById("root");
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
